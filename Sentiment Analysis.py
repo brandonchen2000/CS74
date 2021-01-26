@@ -22,6 +22,14 @@ from sklearn.model_selection import train_test_split
 THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
 my_file = os.path.join(THIS_FOLDER, 'Train.csv')
 df = pd.read_csv(my_file)
+#print(df.shape)
+
+
+
+#delete rows that have NaN fields for features used
+df = df[df['reviewText'].notna()]
+#print(df.shape)
+
 
 # building boolean target column aggregating by amazon id
 df['target'] = df['amazon-id']
@@ -29,10 +37,9 @@ avg = df[['amazon-id', 'overall']].groupby('amazon-id').mean()
 def GetTargetBoolean(amazonID):
     # converts the target boolean given amazon ID
     return (avg.loc[amazonID, 'overall'] > 4.5)
-
-df['target'].apply(lambda x: GetTargetBoolean(x))
-#print(dataWithTargets)
-print(df['target'].head())
+df['target'] = df['target'].map(lambda x: GetTargetBoolean(x))
+#print(df['target'].size)
+#print(df.shape)
 
 
 
