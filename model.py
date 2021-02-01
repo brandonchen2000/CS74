@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 from sklearn.feature_extraction.text import CountVectorizer # TfidfVectorizer
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold, train_test_split
@@ -7,8 +8,15 @@ from sklearn.naive_bayes import GaussianNB, MultinomialNB
 # Train the model
 def train():
     # load the review DataFrame and clear NaNs
-    reviewDf = pd.read_csv('Train.csv')
-    reviewDf = reviewDf.dropna()
+    THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+    my_file = os.path.join(THIS_FOLDER, 'Train.csv')
+    reviewDf = pd.read_csv(my_file)
+    print(reviewDf.shape)
+    reviewDf = reviewDf[reviewDf['reviewText'].notna()]
+    print(reviewDf.shape)
+    reviewDf = reviewDf[reviewDf['summary'].notna()]
+    print(reviewDf.shape)
+
 
     # compute target (awesome or not awesome)
     avg = reviewDf[['amazon-id', 'overall']].groupby('amazon-id').mean()
