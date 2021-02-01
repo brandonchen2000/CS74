@@ -49,10 +49,10 @@ def train():
     THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
     my_file = os.path.join(THIS_FOLDER, 'Train.csv')
     rdf = pd.read_csv(my_file)
-    print(rdf.shape)
+    #print(rdf.shape)
     rdf = rdf[rdf['reviewText'].notna()]
     rdf = rdf[rdf['summary'].notna()]
-    print(rdf.shape)
+    #print(rdf.shape)
 
     # compute target (awesome or not awesome)
     avg = rdf[['amazon-id', 'overall']].groupby('amazon-id', as_index=False).mean()
@@ -74,13 +74,17 @@ def train():
 
         # test
         classifications = classify_reviews(test_df)
+        #test_df.loc[:,('prediction')] = classifications
         test_df['prediction'] = classifications
 
         # score
 
         # need to average predictions for reviews
+        #classified_products = test_df.loc[:,('amazon-id', 'prediction')].groupby('amazon-id').mean(numeric_only=False)
         classified_products = test_df[['amazon-id', 'prediction']].groupby('amazon-id').mean(numeric_only=False)
+        #test_products['prediction'] = test_products.loc[:,('amazon-id')].map(lambda x: classified_products.loc[x, 'prediction'].item())
         test_products['prediction'] = test_products['amazon-id'].map(lambda x: classified_products.loc[x, 'prediction'].item())
+        #test_products['prediction'] = test_products.loc[:,('prediction')] > 0.95
         test_products['prediction'] = test_products['prediction'] > 0.95
 
         f1 = f1_score(test_products['prediction'], test_products['awesome'])
