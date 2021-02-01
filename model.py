@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import pickle
@@ -44,8 +45,14 @@ def classify_reviews(review_df):
 # Train the model
 def train():
     # load the review DataFrame and clear NaNs
-    rdf = pd.read_csv('Train.csv')
-    rdf = rdf.dropna()
+
+    THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+    my_file = os.path.join(THIS_FOLDER, 'Train.csv')
+    rdf = pd.read_csv(my_file)
+    print(rdf.shape)
+    rdf = rdf[rdf['reviewText'].notna()]
+    rdf = rdf[rdf['summary'].notna()]
+    print(rdf.shape)
 
     # compute target (awesome or not awesome)
     avg = rdf[['amazon-id', 'overall']].groupby('amazon-id', as_index=False).mean()
