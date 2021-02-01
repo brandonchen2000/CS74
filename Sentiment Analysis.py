@@ -1,181 +1,115 @@
-import pandas as pd
-import numpy as np
-import sklearn
-import nltk
 import os
-import random
+import numpy as np
+import pandas as pd
+import pickle
+from nltk import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.metrics import f1_score
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.naive_bayes import GaussianNB, MultinomialNB
 
-from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer
-ps = PorterStemmer()
-from nltk import FreqDist
-from nltk import classify
-from nltk import NaiveBayesClassifier
-from nltk.tokenize.treebank import TreebankWordDetokenizer
-from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import GaussianNB
+# Lemmatizes words
+""" class LemmaTokenizer:
+        def __init__(self):
+            self.wnl = WordNetLemmatizer()
+        def __call__(self, doc):
+            return [self.wnl.lemmatize(t) for t in word_tokenize(doc)] """
 
-
-# Do this the first time only to download nltk tools
-# nltk.download()
-
-# get training data
-THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
-my_file = os.path.join(THIS_FOLDER, 'Train.csv')
-df = pd.read_csv(my_file)
-#print(df.shape)
-
-#delete rows that have NaN fields for features used
-df = df[df['reviewText'].notna()]
-#print(df.shape)
-
-
-
-def GetReviewStrings():
-    # gets all reviews and associated dependent variables from the data
-    return df[['reviewText', 'overall', 'target']]
-
-#print(GetReviewStrings(10))
-
-""" for sentence in GetReviewStrings(10):
-    print(word_tokenize(sentence)) """
-
-
-def RemoveStopWords(sentence):
-    # remove stop words from a sentence
-    stopWords = set(stopwords.words('english'))
-    wordTokens = word_tokenize(sentence)
-    filteredSentence = [w for w in wordTokens if not w in stopWords]
-    filteredSentence = TreebankWordDetokenizer().detokenize(filteredSentence)
-    return filteredSentence
-"""     for word in wordTokens:
-        if word not in stopWords:
-            filteredSentence.append(word) """
-
-
-def Stem(sentence):
-    # stem all of the words in a sentence
-    wordTokens = word_tokenize(sentence)
-    stemSentence = []
-    for word in wordTokens:
-        stemSentence.append(ps.stem(word))
-    stemSentence = TreebankWordDetokenizer().detokenize(stemSentence)
-    return stemSentence
-
-""" def WordFrequency(wordTokens): #maybe more useful to do this over the 4.5+ reviews and <4.5 reviews separately
-    # returns word frequency distribution in the cleaned words tokens
-    for tokens in wordTokens:
-        for token in tokens:
-            yield token """
-
-""" def ConvertTokensToDictionary(wordTokens):
-    # convert word tokens to dictionary to prepare for NLTK training methods
-    for token in wordTokens:
-        yield dict([token,True] for token in wordTokens) """
-
-def CleanData():
-    # adds target column, removes stop words, and lemmatizes for all review text in the dataset
-
-    # building boolean target column aggregating by amazon id
-    df['target'] = df['amazon-id']
-    avg = df[['amazon-id', 'overall']].groupby('amazon-id').mean()
-
-    """ def GetTargetBoolean(amazonID):
-        # converts the target boolean given amazon ID
-        return (avg.loc[amazonID, 'overall'] > 4.5)
-    df['target'] = df['target'].map(lambda x: GetTargetBoolean(x)) """
+# Trains the review classifier on reviewText and summary
+def train_review_classifier(train_df):
+    # merge reviewText and summary into one string
+    text = train_df['reviewText'] + train_df['summary']
     
-    df['target'] = df['target'].map(lambda x: avg.loc[x, 'overall'] > 4.5)
+    # Lemmatize the stop words
+    # tokenizer=LemmaTokenizer()
 
-    # remove stop words
-    df['reviewText'] = df['reviewText'].map(lambda x: RemoveStopWords(x))
+    # vectorize the text with TFIDF, 1- and 2-grams and english stop words
+    #vectorizer = TfidfVectorizer(ngram_range=(1, 2), stop_words='english', tokenizer=tokenizer)
+    vectorizer = TfidfVectorizer(ngram_range=(1, 2), stop_words='english')
+    X = vectorizer.fit_transform(text)
 
-    # lemmatize words
-    df['reviewText'] = df['reviewText'].map(lambda x: Stem(x))
+    # train
+    y = train_df['overall']
+    mnb = MultinomialNB()
+    mnb.fit(X, y)
 
-    return df
-    #print(df['target'].size)
-    #print(df.shape)
+    # save vectorizer and mnb
+    pickle.dump(vectorizer, open('review_vectorizer.pickle', 'wb'))
+    pickle.dump(mnb, open('review_mnb.pickle', 'wb'))
 
-#print(CleanData().head())
+# Classifies individual reviews as awesome or not awesome
+def classify_reviews(review_df):
+    # merge reviewText and summary into one feature
+    text = review_df['reviewText'] + review_df['summary']
 
+    # load vectorizer and mnb
+    vectorizer = pickle.load(open('review_vectorizer.pickle', 'rb'))
+    mnb = pickle.load(open('review_mnb.pickle', 'rb'))
 
-def TrainTest():
-    # train on a subset of data - currently using 70% to train
+    # vectorize the text with TFIDF, 1- and 2-grams and english stop words
+    X = vectorizer.transform(text)
+
+    # classify
+    classifications= mnb.predict(X)
+
+    return classifications
+
+# Train the model
+def train():
+    # load the review DataFrame and clear NaNs
+    THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+    my_file = os.path.join(THIS_FOLDER, 'Train.csv')
+    rdf = pd.read_csv(my_file)
+    #print(rdf.shape)
+    rdf = rdf[rdf['reviewText'].notna()]
+    rdf = rdf[rdf['summary'].notna()]
+    #print(rdf.shape)
+
+    # compute target (awesome or not awesome)
+    avg = rdf[['amazon-id', 'overall']].groupby('amazon-id', as_index=False).mean()
+    avg['awesome'] = avg['overall'] > 4.5
+    rdf['awesome'] = rdf['amazon-id'].map(lambda x: avg.loc[avg['amazon-id'] == x, 'awesome'].item())
+
+    # train and test with 10-fold cross validation
+    results = []
+    skf = StratifiedKFold(n_splits=2)
+    for train_idx, test_idx in skf.split(avg, avg['awesome']):
+        train_products = avg.iloc[train_idx]
+        test_products = avg.iloc[test_idx]
+
+        train_df = rdf.loc[rdf['amazon-id'].isin(train_products['amazon-id'])]
+        test_df = rdf.loc[rdf['amazon-id'].isin(test_products['amazon-id'])]
     
-    # pre-process data
-    CleanData()
+        # train
+        train_review_classifier(train_df)
 
-    # get only relevant columns for training and testing
-    dfTrainTest = df[['reviewText','target']]
-    
-    # get target rows and non-target rows
-    dfAwesome = dfTrainTest[dfTrainTest['target'] == True]
-    dfNotAwesome = dfTrainTest[dfTrainTest['target'] == False]
+        # test
+        classifications = classify_reviews(test_df)
+        #test_df.loc[:,('prediction')] = classifications
+        #test_df['prediction'] = classifications.map(lambda x: True if x>4.5 else False)
+        awesomeClassifier = lambda t: True if t>4.5 else False
+        test_df['prediction'] = np.array([awesomeClassifier(x) for x in classifications])
 
+        # score
 
-    dfAwesome['reviewText'].map(lambda x: word_tokenize(x))
-    dfNotAwesome['reviewText'].map(lambda x: word_tokenize(x))
-    
-    # build a dictionary to use in training and testing
-    def buildDictForModel(dataFrame):
-        for sentences in dataFrame['reviewText']:
-            yield dict([token, True] for token in word_tokenize(sentences))
+        # need to average predictions for reviews
+        #classified_products = test_df.loc[:,('amazon-id', 'prediction')].groupby('amazon-id').mean(numeric_only=False)
+        classified_products = test_df[['amazon-id', 'prediction']].groupby('amazon-id').mean(numeric_only=False)
+        #test_products['prediction'] = test_products.loc[:,('amazon-id')].map(lambda x: classified_products.loc[x, 'prediction'].item())
+        test_products['prediction'] = test_products['amazon-id'].map(lambda x: classified_products.loc[x, 'prediction'].item())
+        #test_products['prediction'] = test_products.loc[:,('prediction')] > 0.95
+        test_products['prediction'] = test_products['prediction'] > 0.5
 
-    awesomeTokensForModel = buildDictForModel(dfAwesome)
-    notAwesomeTokensForModel = buildDictForModel(dfNotAwesome)
+        f1 = f1_score(test_products['prediction'], test_products['awesome'])
 
+        results.append(f1)
 
-    awesomeDataset = [(awesomeTokenDict, 'True') for awesomeTokenDict in awesomeTokensForModel]
-    notAwesomeDataset = [(notAwesomeTokenDict, 'False') for notAwesomeTokenDict in notAwesomeTokensForModel]
-    dataset = awesomeDataset + notAwesomeDataset
+    print(np.asarray(results).mean())
 
-    trainData = dataset[:70000]
-    testData = dataset[70000:]
+# Deploy the model
+def deploy():
+    pass
 
-    random.shuffle(dataset)
-    
-    classifier = NaiveBayesClassifier.train(trainData)
-    return classify.accuracy(classifier, testData)
-
-
-
-
-"""     X_train, X_test, y_train, y_test = train_test_split(dfTrainTest.drop('target', axis=1), dfTrainTest['target'], test_size = 0.3)
-    model = GaussianNB()
-    model.fit(X_train, y_train)
-    print(model.score(X_test, y_test)) """
-
-
-
-print(TrainTest())
-
-
-
-""" def Sentiment(sentence):
-    # get the sentiment of a string sentence
-    return  """
-
-
-""" def Predict(score):
-    # predict star rating given the sentiment score
-    # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
-    # https://www.digitalocean.com/community/tutorials/how-to-perform-sentiment-analysis-in-python-3-using-the-natural-language-toolkit-nltk
-
-    #nltk.download('punkt')
-    #nltk.download('wordnet')
-    #nltk.download('averaged_perceptron_tagger')
-    #nltk.download()
-    return  """
-
-
-#def Split(p):
-    # splits the data into a training data set with p% of the data and the remainder for testing
-
-#def AccuracyChecker(n):
-    # used to calculate accuracy of predictions running n distinct trials at a time
-
-
-
-
+if __name__ == "__main__":
+    train()
