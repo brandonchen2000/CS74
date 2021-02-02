@@ -57,7 +57,10 @@ def train():
     # compute target (awesome or not awesome)
     avg = rdf[['amazon-id', 'overall']].groupby('amazon-id', as_index=False).mean()
     avg['awesome'] = avg['overall'] > 4.5
-    rdf['awesome'] = rdf['amazon-id'].map(lambda x: avg.loc[avg['amazon-id'] == x, 'awesome'].item())
+    
+    # NOTE: commented-out line will classify on the average rating for a product, not the review's star rating
+    #rdf['awesome'] = rdf['amazon-id'].map(lambda x: avg.loc[avg['amazon-id'] == x, 'awesome'].item())
+    rdf['awesome'] = rdf['overall'] == 5
 
     # train and test with 10-fold cross validation
     results = []
