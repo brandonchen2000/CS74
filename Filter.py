@@ -45,8 +45,10 @@ for i in range(length):
             avg = proddf2['overall'].loc[id]
             deviation+= ((score-avg)*(score-avg))
 
-        if(deviation>10):
-            rdf.drop(rdf.loc[id])
+        deviation = deviation/len(reviewdf['amazon-id'].iloc[i])
+
+        if(deviation>3):
+            print(reviewdf2.iloc[i])
             count +=1
         deviation = 0
 print(count)
