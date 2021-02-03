@@ -41,7 +41,7 @@ for train_idx, test_idx in kf.split(proddf):
     y_train = traindf['awesome']
 
     # Transform text with TfidfVectorizer
-    tfv = TfidfVectorizer(ngram_range=(1,2), stop_words='english')
+    tfv = TfidfVectorizer(ngram_range=(1,2))
     X_train = tfv.fit_transform(X_train, y_train)
     X_test = tfv.transform(X_test)
 
