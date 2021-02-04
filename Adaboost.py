@@ -30,34 +30,84 @@ rdf['percentHelpful'] = rdf['helpful'].map(percent_helpful)
 
 
 def salesRankBooster():
-    X = rdf[['salesRank']]
-    Y = rdf[['awesome']]
-    clf = AdaBoostClassifier(n_estimators=100)
-    scores = cross_val_score(clf, X, Y.values.ravel(), cv=10)
-    return (scores.mean())
+    # trains based on sales rank
+    f1s = []
+    kf = KFold(n_splits=10)
+    for train_idx, test_idx in kf.split(rdf):
+        traindf = rdf.iloc[train_idx]
+        testdf = rdf.iloc[test_idx]
+
+        X_train = traindf['salesRank'].values.reshape(-1,1)
+        X_test = testdf['salesRank'].values.reshape(-1,1)
+        y_train = traindf['awesome'].values.reshape(-1,1)
+        y_test = testdf['awesome'].values.reshape(-1,1)
+
+        clf = AdaBoostClassifier(n_estimators=100)
+        clf.fit(X_train, y_train)
+        predictions = clf.predict(X_test)
+        f1s.append(f1_score(y_test, predictions, average='weighted'))
+    return np.asarray(f1s).mean()
 
 def helpfulQuantityBooster():
     # trains based on quantity of helpful reviews
-    X = rdf[['totalHelpful']]
-    Y = rdf[['awesome']]
-    clf = AdaBoostClassifier(n_estimators=100)
-    scores = cross_val_score(clf, X, Y.values.ravel(), cv=10)
-    return scores.mean()
+    f1s = []
+    kf = KFold(n_splits=10)
+    for train_idx, test_idx in kf.split(rdf):
+        traindf = rdf.iloc[train_idx]
+        testdf = rdf.iloc[test_idx]
+
+        # Prepare sentiment analysis data
+        X_train = traindf['totalHelpful'].values.reshape(-1,1)
+        X_test = testdf['totalHelpful'].values.reshape(-1,1)
+        y_train = traindf['awesome'].values.reshape(-1,1)
+        y_test = testdf['awesome'].values.reshape(-1,1)
+
+        clf = AdaBoostClassifier(n_estimators=100)
+        clf.fit(X_train, y_train)
+        predictions = clf.predict(X_test)
+        f1s.append(f1_score(y_test, predictions, average='weighted'))
+    return np.asarray(f1s).mean()
 
 def helpfulQualityBooster():
     # trains based on percentage of helpful reviews
-    X = rdf[['percentHelpful']]
-    Y = rdf[['awesome']]
-    clf = AdaBoostClassifier(n_estimators=100)
-    scores = cross_val_score(clf, X, Y.values.ravel(), cv=10)
-    return scores.mean()
+    f1s = []
+    kf = KFold(n_splits=10)
+    for train_idx, test_idx in kf.split(rdf):
+        traindf = rdf.iloc[train_idx]
+        testdf = rdf.iloc[test_idx]
+
+        # Prepare sentiment analysis data
+        X_train = traindf['percentHelpful'].values.reshape(-1,1)
+        X_test = testdf['percentHelpful'].values.reshape(-1,1)
+        y_train = traindf['awesome'].values.reshape(-1,1)
+        y_test = testdf['awesome'].values.reshape(-1,1)
+
+        clf = AdaBoostClassifier(n_estimators=100)
+        clf.fit(X_train, y_train)
+        predictions = clf.predict(X_test)
+        f1s.append(f1_score(y_test, predictions, average='weighted'))
+    return np.asarray(f1s).mean()
 
 def allBooster():
-    X = rdf[['totalHelpful','percentHelpful','salesRank']]
-    Y = rdf[['awesome']]
-    clf = AdaBoostClassifier(n_estimators=100)
-    scores = cross_val_score(clf, X, Y.values.ravel(), cv=10)
-    return scores.mean()
+    #trains based on all 3 features
+    f1s = []
+    kf = KFold(n_splits=10)
+    for train_idx, test_idx in kf.split(rdf):
+        traindf = rdf.iloc[train_idx]
+        testdf = rdf.iloc[test_idx]
+
+        # Prepare sentiment analysis data
+        X_train = traindf[['totalHelpful','percentHelpful','salesRank']]
+        X_test = testdf[['totalHelpful','percentHelpful','salesRank']]
+        y_train = traindf['awesome'].values.reshape(-1,1)
+        y_test = testdf['awesome'].values.reshape(-1,1)
+
+        clf = AdaBoostClassifier(n_estimators=100)
+        clf.fit(X_train, y_train)
+        predictions = clf.predict(X_test)
+        f1s.append(f1_score(y_test, predictions, average='weighted'))
+    return np.asarray(f1s).mean()
+
 
 if __name__ == "__main__":
     print(salesRankBooster())
