@@ -10,3 +10,5 @@ sa.py is our rough isolated sentiment analysis code
 model.py is our rough overall model testing code
 
 filter.py is an additional file with first steps toward further reviewer screening
+
+Anaboost.py uses anaboost and decision trees on the numerical features 
