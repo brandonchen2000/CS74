@@ -54,6 +54,7 @@ for train_idx, test_idx in kf.split(proddf):
     prediction_is_awesome = lambda x: 1 if np.mean(x) > 0.8 else 0
     prodpreddf = testdf.groupby('amazon-id').agg({'prediction': prediction_is_awesome})
 
+    print(classification_report(testproddf['overall'], prodpreddf['prediction']))
     f1s.append(f1_score(testproddf['overall'], prodpreddf['prediction'], average='weighted'))
 
 print(np.asarray(f1s).mean())
