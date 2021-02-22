@@ -33,6 +33,7 @@ reviewdf2 = rdf.groupby('reviewerID').agg({'overall': productscore})
 
 
 
+
 length = len(reviewdf)
 deviation = 0
 count = 0
@@ -61,17 +62,13 @@ reviewdf['reviewerID'] = rdf['reviewerID']
 
 IDs = []
 for i in range(len(rdf)):
-    for j in range(len(reviewers)):
-        print("reviewer: " + str(reviewers[j]) + " id " + str(rdf.iloc[i][0]))
-        if rdf.iloc[i][0] == reviewers[j]:
-                print("Found Reviewer")
-                rdf.drop(i)
-                break
+    if rdf.iloc[i][0] in reviewers:
+        print("Found Review")
+        rdf.drop(i,inplace=True)
+        break
 
-        
 
 if __name__ == "__main__":
-    print(count)
     print(reviewers)
     # print(reviewdf2)
     # print(len(reviewdf))
