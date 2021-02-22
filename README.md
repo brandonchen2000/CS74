@@ -1,16 +1,7 @@
-# CS74
-CS74 Machine Learning Project
+# CS74 Project
 
-test_classify.py and classify.py are the main files to look at
+Items of interest:
 
-classify.py trains on the entire training csv and produces predictions for the test data, using the sentiment analysis from test_classify.py
-
-sa.py is our rough isolated sentiment analysis code
-
-model.py is our rough overall model testing code
-
-filter.py is an additional file with first steps toward further reviewer screening
-
-Anaboost.py uses anaboost and decision trees on the numerical features 
-
-graphs.py generates some statistics on the data set
+`classify.py` - The model we use to produce final predictions.
+`testing code/test_classify.py` - 10-fold cross validation testing of the model we use to produce final predictions.
+`things we tried/*` - Contains some interesting things we tried that didn't work out.
