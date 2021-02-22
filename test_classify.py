@@ -46,12 +46,12 @@ for train_idx, test_idx in kf.split(proddf):
     X_test = tfv.transform(X_test)
 
     # Classify with logistic regression
-    lr = LogisticRegression(max_iter=100, n_jobs=4)
+    lr = LogisticRegression(max_iter=10000, n_jobs=4)
     lr.fit(X_train, y_train)
     testdf['prediction'] = lr.predict(X_test)
 
     # Products are predicted to be awesome if the average of review predictions is over 80%
-    prediction_is_awesome = lambda x: 1 if np.mean(x) > 0.8 else 0
+    prediction_is_awesome = lambda x: 1 if np.mean(x) > 0.80 else 0
     prodpreddf = testdf.groupby('amazon-id').agg({'prediction': prediction_is_awesome})
 
     print(classification_report(testproddf['overall'], prodpreddf['prediction']))
