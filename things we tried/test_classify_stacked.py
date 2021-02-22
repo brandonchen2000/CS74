@@ -68,13 +68,9 @@ for train_idx, test_idx in kf.split(proddf):
     # Now we have actual and predicted review awesomeness scores (1: 5-star and 0: not 5-star).
     # Average the review scores to get a single value from 0 to 1.
     trainproddf['averageReviewScore'] = traindf.groupby('amazon-id').agg({'awesome': 'mean'})
-    testproddf['averageReviewScore'] = testdf.groupby('amazon-id').agg({'awesome': 'mean'})
+    testproddf['averageReviewScore'] = testdf.groupby('amazon-id').agg({'awesomePrediction': 'mean'})
     
-    # FOR BRANDON - trainproddf and testproddf have artist, label, salesRank, and averageSAScore
-    # columns as features, and the overall column as ground truth
-
-    
-    # Prepare sentiment analysis data
+    # Prepare data for AdaBoost
     X_prodtrain = trainproddf[['salesRank','artist','label','averageReviewScore']]
     X_prodtest = testproddf[['salesRank','artist','label','averageReviewScore']]
     y_prodtrain = trainproddf['overall'].values.reshape(-1,1)
@@ -85,11 +81,7 @@ for train_idx, test_idx in kf.split(proddf):
     predictions = clf.predict(X_prodtest)
     f1s.append(f1_score(y_prodtest, predictions, average='weighted'))
 
-    #print(trainproddf)
-    #print(testproddf)
-
     print(classification_report(testproddf['overall'], predictions))
-    f1s.append(f1_score(testproddf['overall'], predictions, average='weighted'))
 
 print(np.asarray(f1s).mean())
 
