@@ -89,7 +89,7 @@ for train_idx, test_idx in kf.split(proddf):
     #print(testproddf)
 
     print(classification_report(testproddf['overall'], predictions))
-    #f1s.append(f1_score(testproddf['overall'], prodpreddf['prediction'], average='weighted'))
+    f1s.append(f1_score(testproddf['overall'], predictions, average='weighted'))
 
 print(np.asarray(f1s).mean())
 
