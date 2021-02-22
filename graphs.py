@@ -62,6 +62,7 @@ def RawGraphs():
         ax.set_title('Score Frequency')
         ax.set_xlabel('Scores')
         ax.set_ylabel('Frequency') 
+        plt.ylim(0,1)
         for rect in rects:
             height = rect.get_height()
             ax.text(rect.get_x() + rect.get_width()/2., height + 0.005,
@@ -69,7 +70,7 @@ def RawGraphs():
                 ha='center', va='bottom')
         plt.show()
 
-    RawNumberPlot()
+    #RawNumberPlot()
     FrequencyPlot()
 
 def AggregatedGraphs():
@@ -78,7 +79,6 @@ def AggregatedGraphs():
     groupedDf = rdf.groupby('amazon-id', as_index=False).agg({'overall': ['mean']})
     groupedDf['awesome'] = groupedDf['overall'] > 4.5
 
-    print(groupedDf['amazon-id'].head)
     awesomeNum1 = 0
     awesomeNum2 = 0
     awesomeNum3 = 0
@@ -92,9 +92,6 @@ def AggregatedGraphs():
 
     for index, row in rdf.iterrows():
         groupedDfRow = groupedDf.loc[groupedDf['amazon-id'] == row['amazon-id']]
-        """ print(groupedDfRow['overall'])
-        print(groupedDfRow['awesome'])
-        print(groupedDfRow['awesome'].iloc[0]) """
         score = row['overall']
 
         if groupedDfRow['awesome'].iloc[0] == True:
@@ -130,7 +127,7 @@ def AggregatedGraphs():
     ax.bar(scores,options)
     ax.set_title('Awesome Products Raw Score Count')
     ax.set_xlabel('Scores')
-    ax.set_ylabel('Frequency') 
+    ax.set_ylabel('Frequency')
     for rect in rects:
         height = rect.get_height()
         ax.text(rect.get_x() + rect.get_width()/2., height + 0.005,
