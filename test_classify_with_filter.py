@@ -62,32 +62,43 @@ for train_idx, test_idx in kf.split(proddf):
     proddf = testdf.groupby('amazon-id').agg({'prediction': product_is_awesome})
     proddf2 = testdf.groupby('amazon-id').agg({'prediction': productavg})
 
-    reviewdf = testdf.groupby('reviewerID').agg({'amazon-id': lambda x: list(x)})
-    reviewdf2 = testdf.groupby('reviewerID').agg({'prediction': productscore})
+    reviewdf = rdf.groupby('reviewerID', as_index=False).agg({'amazon-id': lambda x: list(x)})
 
+    reviewdf2 = rdf.groupby('reviewerID', as_index=False).agg({'overall': productscore})
 
     length = len(reviewdf)
     deviation = 0
     count = 0
-    for i in range(length):
-        if len(reviewdf['amazon-id'].iloc[i]) >= 3:
-            scores = reviewdf2['prediction'].iloc[i]
-            ids = reviewdf['amazon-id'].iloc[i]
-            print(scores)
-            print(ids)
-            for j in range(len(reviewdf['amazon-id'].iloc[i])):
+    reviewers = []
+
+    for index, row in reviewdf.iterrows():
+        if len(reviewdf['amazon-id'].iloc[index]) >= 3:
+            scores = reviewdf2['prediction'].iloc[index]
+
+            ids = reviewdf['amazon-id'].iloc[index]
+            for j in range(len(reviewdf['amazon-id'].iloc[index])):
                 score = scores[j]
                 id = ids[j]
                 avg = proddf2['prediction'].loc[id]
                 deviation += ((score - avg) * (score - avg))
 
-            deviation = deviation / len(reviewdf['amazon-id'].iloc[i])
+            deviation = deviation / len(reviewdf['amazon-id'].iloc[index])
 
-            if (deviation > .25):
-                print(reviewdf2.iloc[i])
+            if (deviation > 3):
+                # print(reviewdf2.iloc[i])
+                reviewers.append(reviewdf['reviewerID'].iloc[index])
                 count += 1
             deviation = 0
-    print(count)
+
+    ids = []
+    for i in range(len(rdf)):
+        # print(rdf['reviewerID'].iloc[i])
+        if rdf['reviewerID'].iloc[i] in reviewers:
+            print("Found Review")
+            ids.append(i)
+
+    print(ids)
+    rdf.drop(ids)
 
     print(classification_report(testproddf['overall'], prodpreddf['prediction']))
     f1s.append(f1_score(testproddf['overall'], prodpreddf['prediction'], average='weighted'))
@@ -96,6 +107,6 @@ print(np.asarray(f1s).mean())
 
 
 if __name__ == "__main__":
-    print(prodpreddf_map)
+    print(ids)
     # print(len(reviewdf))
     # print(proddf)

@@ -27,9 +27,9 @@ proddf2 = rdf.groupby('amazon-id').agg({'overall': productavg})
 
 
 
-reviewdf = rdf.groupby('reviewerID').agg({'amazon-id': lambda x: list(x)})
+reviewdf = rdf.groupby('reviewerID', as_index= False).agg({'amazon-id': lambda x: list(x)})
 
-reviewdf2 = rdf.groupby('reviewerID').agg({'overall': productscore})
+reviewdf2 = rdf.groupby('reviewerID', as_index= False).agg({'overall': productscore})
 
 
 
@@ -38,38 +38,41 @@ length = len(reviewdf)
 deviation = 0
 count = 0
 reviewers =[]
-for i in range(length):
-   if len(reviewdf['amazon-id'].iloc[i])>=3:
-        scores = reviewdf2['overall'].iloc[i]
-        ids = reviewdf['amazon-id'].iloc[i]
-        for j in range(len(reviewdf['amazon-id'].iloc[i])):
+
+for index, row in reviewdf.iterrows():
+   if len(reviewdf['amazon-id'].iloc[index])>=3:
+        scores = reviewdf2['overall'].iloc[index]
+
+        ids = reviewdf['amazon-id'].iloc[index]
+        for j in range(len(reviewdf['amazon-id'].iloc[index])):
             score = scores[j]
             id = ids[j]
             avg = proddf2['overall'].loc[id]
             deviation+= ((score-avg)*(score-avg))
 
-        deviation = deviation/len(reviewdf['amazon-id'].iloc[i])
+        deviation = deviation/len(reviewdf['amazon-id'].iloc[index])
 
 
         if(deviation>3):
            # print(reviewdf2.iloc[i])
-            reviewers.append(id)
+            reviewers.append(reviewdf['reviewerID'].iloc[index])
             count +=1
         deviation = 0
-reviewerlocs = []
-print(reviewers)
-reviewdf['reviewerID'] = rdf['reviewerID']
 
-IDs = []
+
+ids = []
 for i in range(len(rdf)):
-    if rdf.iloc[i][0] in reviewers:
+    #print(rdf['reviewerID'].iloc[i])
+    if rdf['reviewerID'].iloc[i] in reviewers:
         print("Found Review")
-        rdf.drop(i,inplace=True)
-        break
+        ids.append(i)
 
+print(ids)
+rdf.drop(ids)
 
 if __name__ == "__main__":
     print(reviewers)
+    print(count)
     # print(reviewdf2)
     # print(len(reviewdf))
     # print(proddf)
